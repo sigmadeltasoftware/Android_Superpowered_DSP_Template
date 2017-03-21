@@ -1,0 +1,3 @@
+[submodule "app/src/main/jni/Vibrato-effect"]
+	path = app/src/main/jni/Vibrato-effect
+	url = https://github.com/Bershov/Vibrato-effect.git

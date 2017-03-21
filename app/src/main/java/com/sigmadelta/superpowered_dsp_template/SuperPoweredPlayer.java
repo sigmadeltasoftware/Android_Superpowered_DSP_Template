@@ -38,6 +38,16 @@ class SuperPoweredPlayer {
         onPlayPause(_playState);
     }
 
+    void setVibratoDepth(float depth) {
+        setVibratoDepthNative(depth);
+    }
+
+    void setVibratoRate(int rate) {
+        setVibrateRateNative(rate);
+    }
+
     private native void SuperpoweredExample(int samplerate, int buffersize, String apkPath, int fileAlength);
     private native void onPlayPause(boolean play);
+    private native void setVibratoDepthNative(float depth);
+    private native void setVibrateRateNative(int rate);
 }

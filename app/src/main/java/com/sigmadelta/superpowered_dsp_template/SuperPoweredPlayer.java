@@ -17,9 +17,9 @@ class SuperPoweredPlayer {
         final int sampleRate = 44100;
         final int bufferSize = 512;
 
-        final int fileAlength = (int) new File(UriHelper.getPath(ctx, uri)).length();
+        final int fileLengthBytes = (int) new File(UriHelper.getPath(ctx, uri)).length();
 
-        SuperpoweredRenderer(sampleRate, bufferSize, UriHelper.getPath(ctx, uri), fileAlength);
+        SuperpoweredRenderer(sampleRate, bufferSize, UriHelper.getPath(ctx, uri), fileLengthBytes);
     }
 
     void startPlayback() {
@@ -32,9 +32,7 @@ class SuperPoweredPlayer {
         onPlayPause(_playState);
     }
 
-
-
-    private native void SuperpoweredRenderer(int samplerate, int buffersize, String apkPath, int fileAlength);
+    private native void SuperpoweredRenderer(int samplerate, int buffersize, String filePath, int fileLengthBytes);
     private native void onPlayPause(boolean play);
     native void setVibratoDepth(float depth);
     native void setVibratoRate(int rate);

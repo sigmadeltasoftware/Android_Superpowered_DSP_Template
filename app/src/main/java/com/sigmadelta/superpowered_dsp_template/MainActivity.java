@@ -74,7 +74,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
 
-            ((SeekBar) findViewById(R.id.sb_something)).setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            ((SeekBar) findViewById(R.id.sb_vibrato_decay)).setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
                 @Override
                 public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                     player.setVibratoDepth((float) progress/100);

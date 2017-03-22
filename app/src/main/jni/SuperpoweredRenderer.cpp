@@ -2,11 +2,9 @@
 #include <SuperpoweredSimple.h>
 #include <SuperpoweredCPU.h>
 #include <jni.h>
-#include <stdio.h>
 #include <android/log.h>
 #include <SLES/OpenSLES.h>
 #include <SLES/OpenSLES_AndroidConfiguration.h>
-#include <Vibrato-effect/BerVibrato/BerVibrato.h>
 
 #define TAG "SuperPoweredRenderer"
 
@@ -54,13 +52,22 @@ void SuperpoweredRenderer::onPlayPause(bool play) {
 bool SuperpoweredRenderer::process(short int *output, unsigned int numberOfSamples) {
     bool silence = !playerA->process(stereoBuffer, false, numberOfSamples, 1.0f, 0.0f, -1.0f);
 
-//    processDelay(stereoBuffer, numberOfSamples);
-    for (int i = 0; i < numberOfSamples * 2; ++i) {
+    /*****************************
+     *  APPLY PROCESSING BELOW
+     */
+    const int nrChannels = 2;
+    for (int i = 0; i < numberOfSamples * nrChannels; ++i) {
         stereoBuffer[i] = vibrato.processOneSample(stereoBuffer[i]);
     }
+    /*****************************
+     *  APPLY PROCESSING ABOVE
+     */
 
     // The stereoBuffer is ready now, let's put the finished audio into the requested buffers.
-    if (!silence) SuperpoweredFloatToShortInt(stereoBuffer, output, numberOfSamples);
+    if (!silence) {
+        SuperpoweredFloatToShortInt(stereoBuffer, output, numberOfSamples);
+    }
+
     return !silence;
 }
 
@@ -78,14 +85,14 @@ extern "C" JNIEXPORT void JNICALL Java_com_sigmadelta_superpowered_1dsp_1templat
     renderer->onPlayPause(play);
 }
 
-extern "C" JNIEXPORT void JNICALL Java_com_sigmadelta_superpowered_1dsp_1template_SuperPoweredPlayer_setVibratoDepthNative(JNIEnv *env, jobject instance, jfloat depth)
+extern "C" JNIEXPORT void JNICALL Java_com_sigmadelta_superpowered_1dsp_1template_SuperPoweredPlayer_setVibratoDepth(JNIEnv *env, jobject instance, jfloat depth)
 {
     renderer->vibrato.setDepth(depth);
-    __android_log_print(ANDROID_LOG_DEBUG, TAG, "setVibratoDepthNative(): %f", depth);
+    __android_log_print(ANDROID_LOG_DEBUG, TAG, "setVibratoDepth(): %f", depth);
 }
 
-extern "C" JNIEXPORT void JNICALL Java_com_sigmadelta_superpowered_1dsp_1template_SuperPoweredPlayer_setVibrateRateNative(JNIEnv *env, jobject instance, jint rate)
+extern "C" JNIEXPORT void JNICALL Java_com_sigmadelta_superpowered_1dsp_1template_SuperPoweredPlayer_setVibratoRate(JNIEnv *env, jobject instance, jint rate)
 {
     renderer->vibrato.setFrequency((float)rate);
-    __android_log_print(ANDROID_LOG_DEBUG, TAG, "setVibratoRateNative(): %f", (float)rate);
+    __android_log_print(ANDROID_LOG_DEBUG, TAG, "setVibratoRate(): %f", (float)rate);
 }

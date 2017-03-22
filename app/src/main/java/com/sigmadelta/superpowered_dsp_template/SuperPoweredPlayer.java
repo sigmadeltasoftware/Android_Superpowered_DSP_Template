@@ -3,7 +3,6 @@ package com.sigmadelta.superpowered_dsp_template;
 
 import android.content.Context;
 import android.net.Uri;
-import android.util.Log;
 
 import java.io.File;
 
@@ -20,7 +19,7 @@ class SuperPoweredPlayer {
 
         final int fileAlength = (int) new File(UriHelper.getPath(ctx, uri)).length();
 
-        SuperpoweredExample(sampleRate, bufferSize, UriHelper.getPath(ctx, uri), fileAlength);
+        SuperpoweredRenderer(sampleRate, bufferSize, UriHelper.getPath(ctx, uri), fileAlength);
     }
 
     void startPlayback() {
@@ -35,7 +34,7 @@ class SuperPoweredPlayer {
 
 
 
-    private native void SuperpoweredExample(int samplerate, int buffersize, String apkPath, int fileAlength);
+    private native void SuperpoweredRenderer(int samplerate, int buffersize, String apkPath, int fileAlength);
     private native void onPlayPause(boolean play);
     native void setVibratoDepth(float depth);
     native void setVibratoRate(int rate);

@@ -73,7 +73,7 @@ bool SuperpoweredRenderer::process(short int *output, unsigned int numberOfSampl
 
 static SuperpoweredRenderer *renderer = NULL;
 
-extern "C" JNIEXPORT void JNICALL Java_com_sigmadelta_superpowered_1dsp_1template_SuperPoweredPlayer_SuperpoweredExample(JNIEnv *javaEnvironment, jobject instance, jint samplerate,  jint buffersize, jstring apkPath, jint fileLength)
+extern "C" JNIEXPORT void JNICALL Java_com_sigmadelta_superpowered_1dsp_1template_SuperPoweredPlayer_SuperpoweredRenderer(JNIEnv *javaEnvironment, jobject instance, jint samplerate,  jint buffersize, jstring apkPath, jint fileLength)
 {
     const char *path = javaEnvironment->GetStringUTFChars(apkPath, JNI_FALSE);
     renderer = new SuperpoweredRenderer((unsigned int)samplerate, (unsigned int)buffersize, path, fileLength);

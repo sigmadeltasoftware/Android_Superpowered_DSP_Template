@@ -10,8 +10,7 @@
 
 static void playerEventCallbackA(void *clientData, SuperpoweredAdvancedAudioPlayerEvent event, void * __unused value) {
     if (event == SuperpoweredAdvancedAudioPlayerEvent_LoadSuccess) {
-    	SuperpoweredAdvancedAudioPlayer *playerA = *((SuperpoweredAdvancedAudioPlayer **)clientData);
-        playerA->setPosition(playerA->firstBeatMs, false, false);
+        __android_log_print(ANDROID_LOG_DEBUG, TAG, "File loaded succesfully!");
     };
 }
 
@@ -20,14 +19,15 @@ static bool audioProcessing(void *clientdata, short int *audioIO, int numberOfSa
 }
 
 SuperpoweredRenderer::SuperpoweredRenderer(unsigned int samplerate, unsigned int buffersize, const char *path, int fileLength) {
-    stereoBuffer = (float *)memalign(16, (buffersize + 16) * sizeof(float) * 2);
+    /*
+     * According to the SuperpoweredAdvancedAudioPlayer::process method, the size of our buffer should be: numberOfSamples * 8 + 64 bytes big
+     */
+    stereoBuffer = (float *)memalign(16, (buffersize * 8) + 64);
 
-    playerA = new SuperpoweredAdvancedAudioPlayer(&playerA , playerEventCallbackA, samplerate, 0);
-    playerA->open(path, 0, fileLength);
+    audioPlayer = new SuperpoweredAdvancedAudioPlayer(&audioPlayer , playerEventCallbackA, samplerate, 0);
+    audioPlayer->open(path, 0, fileLength);
 
-    playerA->syncMode = SuperpoweredAdvancedAudioPlayerSyncMode_None;
-
-    audioSystem = new SuperpoweredAndroidAudioIO(samplerate, buffersize, false, true, audioProcessing, this, -1, SL_ANDROID_STREAM_MEDIA, buffersize * 2);
+    audioSystem = new SuperpoweredAndroidAudioIO(samplerate, buffersize, false, true, audioProcessing, this, -1, SL_ANDROID_STREAM_MEDIA, 0);
 
     vibrato.initialize(44100);
     vibrato.setDepth(0.0f);
@@ -36,35 +36,35 @@ SuperpoweredRenderer::SuperpoweredRenderer(unsigned int samplerate, unsigned int
 
 SuperpoweredRenderer::~SuperpoweredRenderer() {
     delete audioSystem;
-    delete playerA;
+    delete audioPlayer;
     free(stereoBuffer);
 }
 
 void SuperpoweredRenderer::onPlayPause(bool play) {
     if (!play) {
-        playerA->pause();
+        audioPlayer->pause();
     } else {
-        playerA->play(false);
+        audioPlayer->play(false);
     };
     SuperpoweredCPU::setSustainedPerformanceMode(play); // <-- Important to prevent audio dropouts.
 }
 
 bool SuperpoweredRenderer::process(short int *output, unsigned int numberOfSamples) {
-    bool silence = !playerA->process(stereoBuffer, false, numberOfSamples, 1.0f, 0.0f, -1.0f);
+    bool silence = !audioPlayer->process(stereoBuffer, false, numberOfSamples);
 
-    /*****************************
-     *  APPLY PROCESSING BELOW
-     */
-    const int nrChannels = 2;
-    for (int i = 0; i < numberOfSamples * nrChannels; ++i) {
-        stereoBuffer[i] = vibrato.processOneSample(stereoBuffer[i]);
-    }
-    /*****************************
-     *  APPLY PROCESSING ABOVE
-     */
-
-    // The stereoBuffer is ready now, let's put the finished audio into the requested buffers.
     if (!silence) {
+        /*****************************
+        *  APPLY PROCESSING BELOW
+        */
+        const int nrChannels = 2;
+        for (int i = 0; i < numberOfSamples * nrChannels; ++i) {
+            stereoBuffer[i] = vibrato.processOneSample(stereoBuffer[i]);
+        }
+        /*****************************
+         *  APPLY PROCESSING ABOVE
+         */
+
+        // The stereoBuffer is ready now, let's put the finished audio into the requested buffers.
         SuperpoweredFloatToShortInt(stereoBuffer, output, numberOfSamples);
     }
 

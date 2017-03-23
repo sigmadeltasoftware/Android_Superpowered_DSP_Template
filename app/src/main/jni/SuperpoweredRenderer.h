@@ -22,7 +22,7 @@ public:
 
 private:
     SuperpoweredAndroidAudioIO *audioSystem;
-    SuperpoweredAdvancedAudioPlayer *playerA;
+    SuperpoweredAdvancedAudioPlayer *audioPlayer;
     float *stereoBuffer;
 };
 

@@ -6,19 +6,22 @@ file(GLOB vibrato_SRCS "${CMAKE_SOURCE_DIR}/src/main/jni/Vibrato-effect/BerVibra
 
 # Default flags
 set_property(SOURCE ${jni_SRCS}
-             APPEND_STRING PROPERTY COMPILE_FLAGS "-O3 -Wno-error=format-security")
+             APPEND_STRING PROPERTY COMPILE_FLAGS "-O3")
 
+# Create shared library called superpoweredeffect and list necessary sources
 add_library(superpoweredeffect SHARED
             ${jni_SRCS}
             ${vibrato_SRCS}
             src/main/jni/Superpowered/AndroidIO/SuperpoweredAndroidAudioIO.cpp)
 
+# Add include directories
 target_include_directories(superpoweredeffect PRIVATE
                            src/main/jni
                            src/main/jni/Superpowered)
-
+# Print the Android ABI
 message(${ANDROID_ABI})
 
+# List additional libraries which need to be linked into/with our library
 target_link_libraries(superpoweredeffect
                       android
                       OpenSLES

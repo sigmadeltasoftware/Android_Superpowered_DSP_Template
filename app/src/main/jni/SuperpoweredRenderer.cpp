@@ -5,6 +5,7 @@
 #include <android/log.h>
 #include <SLES/OpenSLES.h>
 #include <SLES/OpenSLES_AndroidConfiguration.h>
+#include <malloc.h>
 
 #define TAG "SuperPoweredRenderer"
 
@@ -27,23 +28,23 @@ SuperpoweredRenderer::SuperpoweredRenderer(unsigned int samplerate, unsigned int
     audioPlayer = new SuperpoweredAdvancedAudioPlayer(&audioPlayer , playerEventCallbackA, samplerate, 0);
     audioPlayer->open(path, 0, fileLength);
 
-    audioSystem = new SuperpoweredAndroidAudioIO(samplerate, buffersize, false, true, audioProcessing, this, -1, SL_ANDROID_STREAM_MEDIA, 0);
-
-    vibrato.initialize(44100);
-    vibrato.setDepth(0.0f);
-    vibrato.setFrequency(0);
+    audioRecorder = new SuperpoweredRecorder("/sdcard/test.wav", samplerate);
+    audioSystem = new SuperpoweredAndroidAudioIO(samplerate, buffersize, false, true, audioProcessing, this, SL_ANDROID_RECORDING_PRESET_GENERIC, SL_ANDROID_STREAM_MEDIA, 0);
 }
 
 SuperpoweredRenderer::~SuperpoweredRenderer() {
     delete audioSystem;
     delete audioPlayer;
+    delete audioRecorder;
     free(stereoBuffer);
 }
 
 void SuperpoweredRenderer::onPlayPause(bool play) {
     if (!play) {
+        audioRecorder->stop();
         audioPlayer->pause();
     } else {
+        audioRecorder->start("/sdcard/test.wav");
         audioPlayer->play(false);
     };
     SuperpoweredCPU::setSustainedPerformanceMode(play); // <-- Important to prevent audio dropouts.
@@ -51,15 +52,12 @@ void SuperpoweredRenderer::onPlayPause(bool play) {
 
 bool SuperpoweredRenderer::process(short int *output, unsigned int numberOfSamples) {
     bool silence = !audioPlayer->process(stereoBuffer, false, numberOfSamples);
-
+    audioRecorder->process(stereoBuffer, NULL, numberOfSamples);
     if (!silence) {
         /*****************************
         *  APPLY PROCESSING BELOW
         */
-        const int nrChannels = 2;
-        for (int i = 0; i < numberOfSamples * nrChannels; ++i) {
-            stereoBuffer[i] = vibrato.processOneSample(stereoBuffer[i]);
-        }
+
         /*****************************
          *  APPLY PROCESSING ABOVE
          */
@@ -87,12 +85,10 @@ extern "C" JNIEXPORT void JNICALL Java_com_sigmadelta_superpowered_1dsp_1templat
 
 extern "C" JNIEXPORT void JNICALL Java_com_sigmadelta_superpowered_1dsp_1template_SuperPoweredPlayer_setVibratoDepth(JNIEnv *env, jobject instance, jfloat depth)
 {
-    renderer->vibrato.setDepth(depth);
     __android_log_print(ANDROID_LOG_DEBUG, TAG, "setVibratoDepth(): %f", depth);
 }
 
 extern "C" JNIEXPORT void JNICALL Java_com_sigmadelta_superpowered_1dsp_1template_SuperPoweredPlayer_setVibratoRate(JNIEnv *env, jobject instance, jint rate)
 {
-    renderer->vibrato.setFrequency((float)rate);
     __android_log_print(ANDROID_LOG_DEBUG, TAG, "setVibratoRate(): %f", (float)rate);
 }

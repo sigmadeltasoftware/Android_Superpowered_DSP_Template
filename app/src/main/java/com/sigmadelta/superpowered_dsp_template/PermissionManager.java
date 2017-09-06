@@ -47,10 +47,10 @@ public class PermissionManager {
 
 
     // Add ID's for any additional permissions here, to use them in your Acitivity's onRequestPermissionsResult()
-    public static final int READ_EXTERNAL_STORAGE_ID = 0;
+    public static final int WRITE_EXTERNAL_STORAGE_ID = 0;
 
     public enum Permissions {
-        READ_EXTERNAL_STORAGE(Manifest.permission.READ_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE_ID);
+        WRITE_EXTERNAL_STORAGE(Manifest.permission.WRITE_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE_ID);
 
         private final String perm;
         private final int id;

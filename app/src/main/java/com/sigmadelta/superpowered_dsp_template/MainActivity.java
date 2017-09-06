@@ -27,7 +27,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         PermissionManager permMan = new PermissionManager(this);
-        permMan.maybeRequestPermission(null, PermissionManager.Permissions.READ_EXTERNAL_STORAGE);
+        permMan.maybeRequestPermission(null, PermissionManager.Permissions.WRITE_EXTERNAL_STORAGE);
 
         final Button btnOpenFile = (Button) findViewById(R.id.btn_open_file);
         btnOpenFile.setOnClickListener(new View.OnClickListener() {
@@ -98,10 +98,10 @@ public class MainActivity extends AppCompatActivity {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
         switch (requestCode) {
-            case PermissionManager.READ_EXTERNAL_STORAGE_ID: {
+            case PermissionManager.WRITE_EXTERNAL_STORAGE_ID: {
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED)
                 {
-                    Log.d(TAG, "Permission READ_EXTERNAL_STORAGE granted!");
+                    Log.d(TAG, "Permission WRITE_EXTERNAL_STORAGE_ID granted!");
                 } else {
                     Toast.makeText(this, "The app was not allowed to write to your storage. Hence, it cannot function properly. Please consider granting it this permission", Toast.LENGTH_LONG).show();
                     finish();

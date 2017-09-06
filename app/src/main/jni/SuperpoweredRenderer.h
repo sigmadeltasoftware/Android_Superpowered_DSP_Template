@@ -8,6 +8,7 @@
 #include <SuperpoweredAdvancedAudioPlayer.h>
 #include <AndroidIO/SuperpoweredAndroidAudioIO.h>
 #include <Vibrato-effect/BerVibrato/BerVibrato.h>
+#include <Superpowered/SuperpoweredRecorder.h>
 
 
 class SuperpoweredRenderer {
@@ -18,11 +19,11 @@ public:
 
 	bool process(short int *output, unsigned int numberOfSamples);
 	void onPlayPause(bool play);
-    BerVibrato vibrato;
 
 private:
     SuperpoweredAndroidAudioIO *audioSystem;
     SuperpoweredAdvancedAudioPlayer *audioPlayer;
+    SuperpoweredRecorder *audioRecorder;
     float *stereoBuffer;
 };
 

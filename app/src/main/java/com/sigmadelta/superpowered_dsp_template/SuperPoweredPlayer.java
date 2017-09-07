@@ -34,6 +34,4 @@ class SuperPoweredPlayer {
 
     private native void SuperpoweredRenderer(int samplerate, int buffersize, String filePath, int fileLengthBytes);
     private native void onPlayPause(boolean play);
-    native void setVibratoDepth(float depth);
-    native void setVibratoRate(int rate);
 }

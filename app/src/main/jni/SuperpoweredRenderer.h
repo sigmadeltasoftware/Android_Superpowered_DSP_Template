@@ -18,27 +18,16 @@ public:
 	SuperpoweredRenderer(unsigned int samplerate, unsigned int buffersize, const char *path, int fileLength);
 	~SuperpoweredRenderer();
 
-	bool processRecording(short int *output, unsigned int numberOfSamples);
-	bool processPlayback(short int *output, unsigned int numberOfSamples);
 	bool process(short int *output, unsigned int numberOfSamples, bool isRecorded);
 	void onPlayPause(bool play);
 
 private:
-    SuperpoweredAndroidAudioIO *audioRecordingSystem;
-    SuperpoweredAndroidAudioIO *audioPlaybackSystem;
+    SuperpoweredAndroidAudioIO *audioSystem;
     SuperpoweredAdvancedAudioPlayer *audioPlayer;
     SuperpoweredRecorder *audioRecorder;
-	SuperpoweredStereoMixer *mixer;
 
-	float *mixerInputs[4];
-	float *mixerOutputs[2];
     float *stereoBufferOutput;
     float *stereoBufferRecording;
-    float *mixerOutput;
-    pthread_mutex_t *mutex = new pthread_mutex_t();
-
-    bool isRecording = false;
-    bool isPlaying = true;
 };
 
 #endif

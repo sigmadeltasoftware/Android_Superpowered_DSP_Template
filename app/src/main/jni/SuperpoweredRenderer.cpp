@@ -15,30 +15,41 @@ static void playerEventCallbackA(void *clientData, SuperpoweredAdvancedAudioPlay
     };
 }
 
-static bool audioProcessing(void *clientdata, short int *audioIO, int numberOfSamples, int __unused samplerate) {
-	return ((SuperpoweredRenderer *)clientdata)->process(audioIO, (unsigned int)numberOfSamples);
+static bool audioPlaybackProcessing(void *clientdata, short int *audioIO, int numberOfSamples, int __unused samplerate) {
+	return ((SuperpoweredRenderer *)clientdata)->processPlayback(audioIO, (unsigned int)numberOfSamples);
+}
+
+static bool audioRecordingProcessing(void *clientdata, short int *audioIO, int numberOfSamples, int __unused samplerate) {
+    return ((SuperpoweredRenderer *)clientdata)->processRecording(audioIO, (unsigned int)numberOfSamples);
 }
 
 SuperpoweredRenderer::SuperpoweredRenderer(unsigned int samplerate, unsigned int buffersize, const char *path, int fileLength) {
     /*
      * According to the SuperpoweredAdvancedAudioPlayer::process method, the size of our buffer should be: numberOfSamples * 8 + 64 bytes big
      */
-    stereoBuffer = (float *)memalign(16, (buffersize * 8) + 64);
-    stereoBufferInput = (float *)memalign(16, (buffersize * 8) + 64);
+    stereoBufferOutput = (float *)memalign(16, (buffersize * 8) + 64);
+    stereoBufferRecording = (float *)memalign(16, (buffersize * 8) + 64);
+    mixerOutput = (float *)memalign(16, (buffersize * 8) + 64);
 
     audioPlayer = new SuperpoweredAdvancedAudioPlayer(&audioPlayer , playerEventCallbackA, samplerate, 2 * buffersize);
     audioPlayer->open(path, 0, fileLength);
 
     audioRecorder = new SuperpoweredRecorder("/sdcard/test.wav", samplerate);
-    audioSystem = new SuperpoweredAndroidAudioIO(samplerate, buffersize, true, true, audioProcessing, this, SL_ANDROID_RECORDING_PRESET_GENERIC, SL_ANDROID_STREAM_MEDIA, 0);
+
+    mixer = new SuperpoweredStereoMixer();
+
+    audioRecordingSystem = new SuperpoweredAndroidAudioIO(samplerate, buffersize, true, false, audioRecordingProcessing, this, SL_ANDROID_RECORDING_PRESET_GENERIC, SL_ANDROID_STREAM_MEDIA, 0);
+    audioPlaybackSystem = new SuperpoweredAndroidAudioIO(samplerate, buffersize, false, true, audioPlaybackProcessing, this, SL_ANDROID_RECORDING_PRESET_GENERIC, SL_ANDROID_STREAM_MEDIA, 0);
 }
 
 SuperpoweredRenderer::~SuperpoweredRenderer() {
-    delete audioSystem;
+    delete audioRecordingSystem;
+    delete audioPlaybackSystem;
     delete audioPlayer;
     delete audioRecorder;
-    free(stereoBuffer);
-    free(stereoBufferInput);
+    delete mixer;
+    free(stereoBufferOutput);
+    free(stereoBufferRecording);
 }
 
 void SuperpoweredRenderer::onPlayPause(bool play) {
@@ -52,23 +63,47 @@ void SuperpoweredRenderer::onPlayPause(bool play) {
     SuperpoweredCPU::setSustainedPerformanceMode(play); // <-- Important to prevent audio dropouts.
 }
 
-bool SuperpoweredRenderer::process(short int *output, unsigned int numberOfSamples) {
-    audioRecorder->process(stereoBufferInput, NULL, numberOfSamples);
-    bool silence = !audioPlayer->process(stereoBuffer, false, numberOfSamples);
-    if (!silence) {
-        /*****************************
-        *  APPLY PROCESSING BELOW
-        */
+bool SuperpoweredRenderer::processRecording(short int *output, unsigned int numberOfSamples) {
+//    isRecording = true;
+//
+//    while (isPlaying);
+//    if (!isPlaying) {
+        SuperpoweredShortIntToFloat(output, stereoBufferRecording, numberOfSamples);
+//    }
+//    isRecording = false;
 
-        /*****************************
-         *  APPLY PROCESSING ABOVE
-         */
+    return true;
+}
 
-        // The stereoBuffer is ready now, let's put the finished audio into the requested buffers.
-        SuperpoweredFloatToShortInt(stereoBufferInput, output, numberOfSamples);
-    }
+bool SuperpoweredRenderer::processPlayback(short int *output, unsigned int numberOfSamples) {
+//    isPlaying = true;
+//
+//    while(isRecording);
+//
+//    if (!isRecording) {
+        bool silence = !audioPlayer->process(stereoBufferOutput, false, numberOfSamples);
+        SuperpoweredFloatToShortInt(stereoBufferOutput, output, numberOfSamples);
 
-    return !silence;
+        // Mix signals
+        mixerInputs[0] = stereoBufferRecording;
+        mixerInputs[1] = stereoBufferOutput;
+        mixerInputs[2] = NULL;
+        mixerInputs[3] = NULL;
+
+        mixerOutputs[0] = mixerOutput;
+        mixerOutputs[1] = NULL;
+
+        float inputLevels[] = {0.5f, 0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f};
+        float outputLevels[] = {1.0f, 1.0f};
+
+        mixer->process(mixerInputs, mixerOutputs, inputLevels, outputLevels, NULL, NULL, numberOfSamples);
+
+        audioRecorder->process(mixerOutput, NULL, numberOfSamples);
+//    }
+//    // The stereoBuffer is ready now, let's put the finished audio into the requested buffers.
+//
+//    isPlaying = false;
+    return true;
 }
 
 static SuperpoweredRenderer *renderer = NULL;

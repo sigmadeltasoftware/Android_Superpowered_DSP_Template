@@ -16,11 +16,11 @@ static void playerEventCallbackA(void *clientData, SuperpoweredAdvancedAudioPlay
 }
 
 static bool audioPlaybackProcessing(void *clientdata, short int *audioIO, int numberOfSamples, int __unused samplerate) {
-	return ((SuperpoweredRenderer *)clientdata)->processPlayback(audioIO, (unsigned int)numberOfSamples);
+	return ((SuperpoweredRenderer *)clientdata)->process(audioIO, (unsigned int)numberOfSamples, false);
 }
 
 static bool audioRecordingProcessing(void *clientdata, short int *audioIO, int numberOfSamples, int __unused samplerate) {
-    return ((SuperpoweredRenderer *)clientdata)->processRecording(audioIO, (unsigned int)numberOfSamples);
+    return ((SuperpoweredRenderer *)clientdata)->process(audioIO, (unsigned int)numberOfSamples, true);
 }
 
 SuperpoweredRenderer::SuperpoweredRenderer(unsigned int samplerate, unsigned int buffersize, const char *path, int fileLength) {
@@ -38,8 +38,8 @@ SuperpoweredRenderer::SuperpoweredRenderer(unsigned int samplerate, unsigned int
 
     mixer = new SuperpoweredStereoMixer();
 
-    audioRecordingSystem = new SuperpoweredAndroidAudioIO(samplerate, buffersize, true, false, audioRecordingProcessing, this, SL_ANDROID_RECORDING_PRESET_GENERIC, SL_ANDROID_STREAM_MEDIA, 0);
-    audioPlaybackSystem = new SuperpoweredAndroidAudioIO(samplerate, buffersize, false, true, audioPlaybackProcessing, this, SL_ANDROID_RECORDING_PRESET_GENERIC, SL_ANDROID_STREAM_MEDIA, 0);
+    audioRecordingSystem = new SuperpoweredAndroidAudioIO(samplerate, buffersize, true, false, audioRecordingProcessing, this, -1, SL_ANDROID_STREAM_MEDIA, 0);
+    audioPlaybackSystem = new SuperpoweredAndroidAudioIO(samplerate, buffersize, false, true, audioPlaybackProcessing, this, -1, SL_ANDROID_STREAM_MEDIA, 0);
 }
 
 SuperpoweredRenderer::~SuperpoweredRenderer() {
@@ -103,6 +103,34 @@ bool SuperpoweredRenderer::processPlayback(short int *output, unsigned int numbe
 //    // The stereoBuffer is ready now, let's put the finished audio into the requested buffers.
 //
 //    isPlaying = false;
+    return true;
+}
+
+bool SuperpoweredRenderer::process(short int *buffer, unsigned int numberOfSamples, bool isRecorded) {
+    pthread_mutex_lock(mutex);
+    if (isRecorded) {
+        SuperpoweredShortIntToFloat(buffer, stereoBufferRecording, numberOfSamples);
+    } else {
+        bool silence = !audioPlayer->process(stereoBufferOutput, false, numberOfSamples);
+        SuperpoweredFloatToShortInt(stereoBufferOutput, buffer, numberOfSamples);
+
+        // Mix signals
+        mixerInputs[0] = stereoBufferRecording;
+        mixerInputs[1] = NULL;//stereoBufferOutput;
+        mixerInputs[2] = NULL;
+        mixerInputs[3] = NULL;
+
+        mixerOutputs[0] = mixerOutput;
+        mixerOutputs[1] = NULL;
+
+        float inputLevels[] = {0.5f, 0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f};
+        float outputLevels[] = {1.0f, 1.0f};
+
+        mixer->process(mixerInputs, mixerOutputs, inputLevels, outputLevels, NULL, NULL, numberOfSamples);
+
+        audioRecorder->process(mixerOutput, NULL, numberOfSamples);
+    }
+    pthread_mutex_unlock(mutex);
     return true;
 }
 

@@ -24,12 +24,13 @@ SuperpoweredRenderer::SuperpoweredRenderer(unsigned int samplerate, unsigned int
      * According to the SuperpoweredAdvancedAudioPlayer::process method, the size of our buffer should be: numberOfSamples * 8 + 64 bytes big
      */
     stereoBuffer = (float *)memalign(16, (buffersize * 8) + 64);
+    stereoBufferInput = (float *)memalign(16, (buffersize * 8) + 64);
 
-    audioPlayer = new SuperpoweredAdvancedAudioPlayer(&audioPlayer , playerEventCallbackA, samplerate, 0);
+    audioPlayer = new SuperpoweredAdvancedAudioPlayer(&audioPlayer , playerEventCallbackA, samplerate, 2 * buffersize);
     audioPlayer->open(path, 0, fileLength);
 
     audioRecorder = new SuperpoweredRecorder("/sdcard/test.wav", samplerate);
-    audioSystem = new SuperpoweredAndroidAudioIO(samplerate, buffersize, false, true, audioProcessing, this, SL_ANDROID_RECORDING_PRESET_GENERIC, SL_ANDROID_STREAM_MEDIA, 0);
+    audioSystem = new SuperpoweredAndroidAudioIO(samplerate, buffersize, true, true, audioProcessing, this, SL_ANDROID_RECORDING_PRESET_GENERIC, SL_ANDROID_STREAM_MEDIA, 0);
 }
 
 SuperpoweredRenderer::~SuperpoweredRenderer() {
@@ -37,6 +38,7 @@ SuperpoweredRenderer::~SuperpoweredRenderer() {
     delete audioPlayer;
     delete audioRecorder;
     free(stereoBuffer);
+    free(stereoBufferInput);
 }
 
 void SuperpoweredRenderer::onPlayPause(bool play) {
@@ -51,8 +53,8 @@ void SuperpoweredRenderer::onPlayPause(bool play) {
 }
 
 bool SuperpoweredRenderer::process(short int *output, unsigned int numberOfSamples) {
+    audioRecorder->process(stereoBufferInput, NULL, numberOfSamples);
     bool silence = !audioPlayer->process(stereoBuffer, false, numberOfSamples);
-    audioRecorder->process(stereoBuffer, NULL, numberOfSamples);
     if (!silence) {
         /*****************************
         *  APPLY PROCESSING BELOW
@@ -63,7 +65,7 @@ bool SuperpoweredRenderer::process(short int *output, unsigned int numberOfSampl
          */
 
         // The stereoBuffer is ready now, let's put the finished audio into the requested buffers.
-        SuperpoweredFloatToShortInt(stereoBuffer, output, numberOfSamples);
+        SuperpoweredFloatToShortInt(stereoBufferInput, output, numberOfSamples);
     }
 
     return !silence;

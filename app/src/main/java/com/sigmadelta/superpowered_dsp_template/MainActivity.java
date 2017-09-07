@@ -28,6 +28,7 @@ public class MainActivity extends AppCompatActivity {
 
         PermissionManager permMan = new PermissionManager(this);
         permMan.maybeRequestPermission(null, PermissionManager.Permissions.WRITE_EXTERNAL_STORAGE);
+        permMan.maybeRequestPermission(null, PermissionManager.Permissions.RECORD_AUDIO);
 
         final Button btnOpenFile = (Button) findViewById(R.id.btn_open_file);
         btnOpenFile.setOnClickListener(new View.OnClickListener() {
@@ -104,6 +105,16 @@ public class MainActivity extends AppCompatActivity {
                     Log.d(TAG, "Permission WRITE_EXTERNAL_STORAGE_ID granted!");
                 } else {
                     Toast.makeText(this, "The app was not allowed to write to your storage. Hence, it cannot function properly. Please consider granting it this permission", Toast.LENGTH_LONG).show();
+                    finish();
+                }
+            } break;
+
+            case PermissionManager.RECORD_AUDIO_ID: {
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED)
+                {
+                    Log.d(TAG, "Permission RECORD_AUDIO_ID granted!");
+                } else {
+                    Toast.makeText(this, "The app was not allowed to record audio. Hence, it cannot function properly. Please consider granting it this permission", Toast.LENGTH_LONG).show();
                     finish();
                 }
             } break;

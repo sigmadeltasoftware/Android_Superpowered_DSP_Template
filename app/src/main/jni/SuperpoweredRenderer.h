@@ -25,6 +25,7 @@ private:
     SuperpoweredAdvancedAudioPlayer *audioPlayer;
     SuperpoweredRecorder *audioRecorder;
     float *stereoBuffer;
+    float *stereoBufferInput;
 };
 
 #endif

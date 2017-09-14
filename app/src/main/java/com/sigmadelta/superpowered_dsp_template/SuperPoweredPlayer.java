@@ -3,6 +3,7 @@ package com.sigmadelta.superpowered_dsp_template;
 
 import android.content.Context;
 import android.net.Uri;
+import android.util.Log;
 
 import java.io.File;
 
@@ -29,6 +30,7 @@ class SuperPoweredPlayer {
 
     void togglePlayback() {
         _playState = !_playState;
+        Log.d(TAG, "PlayState: " + _playState);
         onPlayPause(_playState);
     }
 

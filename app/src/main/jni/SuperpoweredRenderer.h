@@ -25,9 +25,14 @@ private:
     SuperpoweredAndroidAudioIO *audioSystem;
     SuperpoweredAdvancedAudioPlayer *audioPlayer;
     SuperpoweredRecorder *audioRecorder;
+    SuperpoweredStereoMixer *mixerBackend;
 
     float *stereoBufferOutput;
     float *stereoBufferRecording;
+	float *mixerOutputBuffer;
+
+	float *mixerInputs[4];
+	float *mixerOutputs[2];
 };
 
 #endif

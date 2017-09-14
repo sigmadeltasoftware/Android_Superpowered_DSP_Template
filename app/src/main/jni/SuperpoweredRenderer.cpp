@@ -23,12 +23,13 @@ SuperpoweredRenderer::SuperpoweredRenderer(unsigned int samplerate, unsigned int
      */
     stereoBufferOutput = (float *)memalign(16, (buffersize * 8) + 64);
     stereoBufferRecording = (float *)memalign(16, (buffersize * 8) + 64);
+    mixerOutputBuffer = (float *)memalign(16, (buffersize * 8) + 64);
 
     audioPlayer = new SuperpoweredAdvancedAudioPlayer(&audioPlayer , playerEventCallbackA, samplerate, 2 * buffersize);
     audioPlayer->open(path, 0, fileLength);
 
-    audioRecorder = new SuperpoweredRecorder("/sdcard/test.wav", samplerate);
-
+    audioRecorder = new SuperpoweredRecorder("/sdcard/test_temp.wav", samplerate);
+    mixerBackend = new SuperpoweredStereoMixer();
     audioSystem = new SuperpoweredAndroidAudioIO(samplerate, buffersize, true, true, audioRecordingProcessing, this);
 }
 
@@ -36,8 +37,10 @@ SuperpoweredRenderer::~SuperpoweredRenderer() {
     delete audioSystem;
     delete audioPlayer;
     delete audioRecorder;
+    delete mixerBackend;
     free(stereoBufferOutput);
     free(stereoBufferRecording);
+    free(mixerOutputBuffer);
 }
 
 void SuperpoweredRenderer::onPlayPause(bool play) {
@@ -45,17 +48,33 @@ void SuperpoweredRenderer::onPlayPause(bool play) {
         audioRecorder->stop();
         audioPlayer->pause();
     } else {
-        audioRecorder->start("/sdcard/test.wav");
+        audioRecorder->start("/sdcard/output_mic_and_song");
         audioPlayer->play(false);
     };
     SuperpoweredCPU::setSustainedPerformanceMode(play); // <-- Important to prevent audio dropouts.
+    __android_log_print(ANDROID_LOG_DEBUG, TAG, "onPlayPause(): play = %d", play);
 }
 
 bool SuperpoweredRenderer::process(short int *buffer, unsigned int numberOfSamples, bool isRecorded) {
     SuperpoweredShortIntToFloat(buffer, stereoBufferRecording, numberOfSamples);
-    bool silence = !audioPlayer->process(stereoBufferRecording, true, numberOfSamples);
-    audioRecorder->process(stereoBufferRecording, NULL, numberOfSamples);
-    SuperpoweredFloatToShortInt(stereoBufferRecording, buffer, numberOfSamples);
+    bool silence = audioPlayer->process(stereoBufferOutput, false, numberOfSamples);
+
+    // Mixing
+    mixerInputs[0] = stereoBufferOutput;
+    mixerInputs[1] = stereoBufferRecording;
+    mixerInputs[2] = NULL;
+    mixerInputs[3] = NULL;
+
+    mixerOutputs[0] = mixerOutputBuffer;
+    mixerOutputs[1] = NULL;
+
+    float inputLevels[] = { 0.3f, 0.3f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f };
+    float outputLevels[] = { 1.0f, 1.0f };
+    mixerBackend->process(mixerInputs, mixerOutputs, inputLevels, outputLevels, NULL, NULL, numberOfSamples);
+    audioRecorder->process(mixerOutputBuffer, NULL, numberOfSamples);
+
+    // Output only music to speakers
+    SuperpoweredFloatToShortInt(stereoBufferOutput, buffer, numberOfSamples);
 
     return silence;
 }

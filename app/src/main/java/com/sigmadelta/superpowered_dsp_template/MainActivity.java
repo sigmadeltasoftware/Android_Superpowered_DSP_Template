@@ -48,7 +48,6 @@ public class MainActivity extends AppCompatActivity {
         // If a file has been selected through the filechooser-intent we launched with the 'Open File' button
         if (requestCode == FILECHOOSER_AUDIO_INTENT) {
             final SuperPoweredPlayer player = new SuperPoweredPlayer(data.getData(), this);
-            player.startPlayback();
 
             findViewById(R.id.btn_play_pause).setOnClickListener(new View.OnClickListener() {
                 @Override

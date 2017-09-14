@@ -63,72 +63,29 @@ void SuperpoweredRenderer::onPlayPause(bool play) {
     SuperpoweredCPU::setSustainedPerformanceMode(play); // <-- Important to prevent audio dropouts.
 }
 
-bool SuperpoweredRenderer::processRecording(short int *output, unsigned int numberOfSamples) {
-//    isRecording = true;
-//
-//    while (isPlaying);
-//    if (!isPlaying) {
-        SuperpoweredShortIntToFloat(output, stereoBufferRecording, numberOfSamples);
-//    }
-//    isRecording = false;
-
-    return true;
-}
-
-bool SuperpoweredRenderer::processPlayback(short int *output, unsigned int numberOfSamples) {
-//    isPlaying = true;
-//
-//    while(isRecording);
-//
-//    if (!isRecording) {
-        bool silence = !audioPlayer->process(stereoBufferOutput, false, numberOfSamples);
-        SuperpoweredFloatToShortInt(stereoBufferOutput, output, numberOfSamples);
-
-        // Mix signals
-        mixerInputs[0] = stereoBufferRecording;
-        mixerInputs[1] = stereoBufferOutput;
-        mixerInputs[2] = NULL;
-        mixerInputs[3] = NULL;
-
-        mixerOutputs[0] = mixerOutput;
-        mixerOutputs[1] = NULL;
-
-        float inputLevels[] = {0.5f, 0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f};
-        float outputLevels[] = {1.0f, 1.0f};
-
-        mixer->process(mixerInputs, mixerOutputs, inputLevels, outputLevels, NULL, NULL, numberOfSamples);
-
-        audioRecorder->process(mixerOutput, NULL, numberOfSamples);
-//    }
-//    // The stereoBuffer is ready now, let's put the finished audio into the requested buffers.
-//
-//    isPlaying = false;
-    return true;
-}
-
 bool SuperpoweredRenderer::process(short int *buffer, unsigned int numberOfSamples, bool isRecorded) {
     pthread_mutex_lock(mutex);
     if (isRecorded) {
         SuperpoweredShortIntToFloat(buffer, stereoBufferRecording, numberOfSamples);
     } else {
         bool silence = !audioPlayer->process(stereoBufferOutput, false, numberOfSamples);
-        SuperpoweredFloatToShortInt(stereoBufferOutput, buffer, numberOfSamples);
 
         // Mix signals
-        mixerInputs[0] = stereoBufferRecording;
-        mixerInputs[1] = NULL;//stereoBufferOutput;
+        mixerInputs[0] = stereoBufferOutput;
+        mixerInputs[1] = stereoBufferRecording;
         mixerInputs[2] = NULL;
         mixerInputs[3] = NULL;
 
         mixerOutputs[0] = mixerOutput;
         mixerOutputs[1] = NULL;
 
-        float inputLevels[] = {0.5f, 0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f};
+        float inputLevels[] = {0.3f, 0.3f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f};
         float outputLevels[] = {1.0f, 1.0f};
 
         mixer->process(mixerInputs, mixerOutputs, inputLevels, outputLevels, NULL, NULL, numberOfSamples);
 
         audioRecorder->process(mixerOutput, NULL, numberOfSamples);
+        SuperpoweredFloatToShortInt(stereoBufferOutput, buffer, numberOfSamples);
     }
     pthread_mutex_unlock(mutex);
     return true;
